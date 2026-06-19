@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vortex Street — read the wind speed off the wake</title>
+<title>2D Navier-Stokes solver | vortex street and flow-meter</title>
 <script src="../output/cylinder_data.js"></script>
 <script src="../output/flowmeter_data.js"></script>
 <style>
@@ -73,15 +73,15 @@
       <div class="kpi"><b id="kCl">0.4</b><span>lift amplitude</span></div>
     </div>
 
-    <label class="row">Reynolds number (flow speed) — <span id="ReLab">100</span></label>
+    <label class="row">Reynolds number (flow speed): <span id="ReLab">100</span></label>
     <input id="ReSlide" type="range" min="0" max="0" step="1" value="0">
 
     <p class="only-simple" style="font-size:13.5px">
-      A round pillar sits in a steady wind. Above a certain speed the wind can't
-      stay attached — it peels off in <b>alternating swirls</b>, first up, then
-      down. Each swirl tugs the pillar sideways, so the wind delivers a
+      A round pillar sits in a steady wind. Above a certain speed the flow can no
+      longer stay attached, and it peels off in <b>alternating swirls</b>, first up,
+      then down. Each swirl tugs the pillar sideways, so the wind delivers a
       <b>rhythmic push</b>. That rhythm is what topples chimneys and makes cables
-      gallop — the same story as the truck that shook the bridge.
+      gallop.
     </p>
 
     <div class="only-math">
