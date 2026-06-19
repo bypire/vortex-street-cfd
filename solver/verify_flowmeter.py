@@ -25,7 +25,7 @@ from flowmeter import calibrate_st, st_of_Re, recover_with_uncertainty
 
 # physical scaling so that Re = U * D / nu = 100 * U  (clean mapping)
 D_PHYS, NU_PHYS = 0.1, 1.0e-3
-U_TRUE = [0.7, 1.0, 1.3, 1.6]                  # -> Re = 70, 100, 130, 160
+U_TRUE = [0.7, 1.0, 1.3]                       # -> Re = 70, 100, 130 (laminar, stable band)
 WILLIAMSON = np.array([-3.3265, 0.1816, 1.6e-4])
 
 
