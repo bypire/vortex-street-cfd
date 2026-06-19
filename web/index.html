@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vortex Street — read the wind speed off the wake</title>
+<script src="../output/cylinder_data.js"></script>
+<script src="../output/flowmeter_data.js"></script>
+<style>
+  :root{ --bg:#0b1020; --panel:#121a30; --ink:#e8eefc; --mut:#8a98b8;
+         --hot:#e23b4e; --cold:#2f6df6; --acc:#46e0c0; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif}
+  header{padding:22px 26px 6px}
+  h1{margin:0;font-size:23px;letter-spacing:.2px}
+  .sub{color:var(--mut);font-size:14px;margin-top:3px}
+  .wrap{display:grid;grid-template-columns:1fr 320px;gap:18px;padding:16px 26px 40px}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .stage{background:#070b16;border:1px solid #1d2742;
+         border-radius:12px;padding:10px;position:relative}
+  canvas{width:100%;display:block;border-radius:8px;image-rendering:auto;background:#070b16}
+  .cap{color:var(--mut);font-size:13px;padding:8px 4px 2px}
+  .panel{background:var(--panel);border:1px solid #1d2742;border-radius:12px;padding:16px}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 14px}
+  .kpi{background:#0c1426;border:1px solid #212c4c;border-radius:9px;padding:9px 11px}
+  .kpi b{display:block;font-size:21px}
+  .kpi span{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  label.row{display:block;margin:14px 0 4px;font-size:13px;color:var(--mut)}
+  input[type=range]{width:100%}
+  .toggle{display:inline-flex;border:1px solid #2a3760;border-radius:20px;overflow:hidden;margin-top:6px}
+  .toggle button{background:transparent;color:var(--mut);border:0;padding:6px 14px;cursor:pointer;font-size:13px}
+  .toggle button.on{background:var(--acc);color:#04221c;font-weight:700}
+  .eq{font-family:"Cambria Math",Georgia,serif;background:#0c1426;border-left:3px solid var(--acc);
+      padding:8px 11px;border-radius:6px;margin:9px 0;font-size:14px;overflow-x:auto}
+  .only-math{display:none}
+  body.math .only-math{display:block}
+  body.math .only-simple{display:none}
+  .foot{color:var(--mut);font-size:12.5px;padding:0 26px 30px;max-width:920px}
+  a{color:var(--acc)}
+  .legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);padding:4px}
+  .bar{height:10px;flex:1;border-radius:5px;
+       background:linear-gradient(90deg,#2f6df6,#dfe8ff,#e23b4e)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Vortex Street &mdash; how wind becomes a force that shakes a structure</h1>
+  <div class="sub">A from-scratch incompressible Navier&ndash;Stokes solver
+   (finite-volume MAC grid, Chorin projection), checked against Ghia 1982 and
+   Williamson's shedding law.</div>
+</header>
+
+<div class="wrap">
+  <div>
+    <div class="stage">
+      <canvas id="cv" width="660" height="270"></canvas>
+      <div class="legend"><span>clockwise</span><div class="bar"></div><span>counter-clockwise</span></div>
+    </div>
+    <div class="cap" id="cap"></div>
+  </div>
+
+  <div class="panel">
+    <div class="toggle" id="tg">
+      <button data-m="simple" class="on">Simple</button>
+      <button data-m="math">Math</button>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><b id="kRe">100</b><span>Reynolds number</span></div>
+      <div class="kpi"><b id="kSt">0.17</b><span>Strouhal St</span></div>
+      <div class="kpi"><b id="kCd">1.5</b><span>drag C<sub>D</sub></span></div>
+      <div class="kpi"><b id="kCl">0.4</b><span>lift amplitude</span></div>
+    </div>
+
+    <label class="row">Reynolds number (flow speed) — <span id="ReLab">100</span></label>
+    <input id="ReSlide" type="range" min="0" max="0" step="1" value="0">
+
+    <p class="only-simple" style="font-size:13.5px">
+      A round pillar sits in a steady wind. Above a certain speed the wind can't
+      stay attached — it peels off in <b>alternating swirls</b>, first up, then
+      down. Each swirl tugs the pillar sideways, so the wind delivers a
+      <b>rhythmic push</b>. That rhythm is what topples chimneys and makes cables
+      gallop — the same story as the truck that shook the bridge.
+    </p>
+
+    <div class="only-math">
+      <div class="eq">∂<b>u</b>/∂t + (<b>u</b>·∇)<b>u</b> = −∇p + ν∇²<b>u</b>,&nbsp; ∇·<b>u</b>=0</div>
+      <div style="font-size:13px;color:var(--mut)">
+        Solved by Chorin projection on a staggered MAC grid; the cylinder is an
+        immersed boundary (volume penalization), whose penalty reaction gives the
+        drag/lift directly.</div>
+      <div class="eq">St = f·D/U &nbsp;≈&nbsp; 0.198 (1 − 19.7/Re)</div>
+      <div style="font-size:13px;color:var(--mut)">
+        Shedding frequency f → a sideways lift force at St·U/D. Verified:
+        cavity centrelines match Ghia 1982 to RMS 2·10⁻³; St follows Williamson
+        (residual offset = quantified domain blockage).</div>
+      <div class="eq" style="border-left-color:#e9a23b">
+        inverse: &nbsp;U = f·D / St(Re) &nbsp;←&nbsp; recover the wind from the wobble</div>
+      <div style="font-size:13px;color:var(--mut)">
+        FFT the wake → peak f → invert St(Re) → flow speed U, with a 95% CI from
+        sensor-noise: a simulate→recover round-trip with uncertainty.</div>
+    </div>
+
+    <div id="state" style="margin-top:12px;font-size:13px;color:var(--acc)"></div>
+  </div>
+</div>
+
+<div style="padding:6px 26px 10px">
+  <div style="background:linear-gradient(135deg,#101a33,#0c1426);border:1px solid #28406e;
+              border-radius:14px;padding:18px 22px">
+    <div style="font-size:18px;font-weight:700">
+      Same solver, run <span style="color:var(--acc)">backwards</span> &mdash;
+      read the wind speed off the wobble</div>
+    <div style="color:var(--mut);font-size:13.5px;margin:4px 0 14px;max-width:760px">
+      The point of the project. A bluff body sheds at <i>f = St·U/D</i>, so the
+      wake frequency <b>encodes the flow speed</b> &mdash; this is how industrial
+      vortex flow-meters work. It is inverted here on the solver: known U &rarr;
+      it sheds &rarr; recover U with a 95% CI.</div>
+    <div id="invGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"></div>
+    <div id="invNote" style="color:var(--mut);font-size:12px;margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="foot">
+  Checked against references (Ghia et al. 1982; Williamson 1996). Blockage from
+  the finite domain is reported. The vorticity field shown is generated by the
+  solver.
+</div>
+
+<script>
+const D = (typeof CYLINDER_DATA!=="undefined") ? CYLINDER_DATA : null;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let cases = D ? Object.keys(D.cases).map(Number).sort((a,b)=>a-b) : [];
+let cur = 0, frames = [], meta = null, off = null, offctx = null, fi = 0;
+
+function decodeCase(Re){
+  const c = D.cases[String(Re)];
+  const raw = atob(c.frames_b64);
+  const buf = new Int8Array(raw.length);
+  for(let i=0;i<raw.length;i++) buf[i]=raw.charCodeAt(i)<<24>>24;
+  const {nx,ny,nframes}=c; frames=[];
+  for(let f=0;f<nframes;f++) frames.push(buf.subarray(f*nx*ny,(f+1)*nx*ny));
+  meta=c;
+  off=document.createElement("canvas"); off.width=nx; off.height=ny;
+  offctx=off.getContext("2d");
+}
+
+// blue-white-red colormap for vorticity sign
+function color(v){ // v in [-1,1]
+  const t=(v+1)/2;
+  if(t<0.5){const s=t/0.5;return[47+(223-47)*s,109+(232-109)*s,246+(255-246)*s];}
+  const s=(t-0.5)/0.5;return[223+(226-223)*s,232+(59-232)*s,255+(78-255)*s];
+}
+
+function drawFrame(){
+  if(!meta) return;
+  const {nx,ny}=meta;
+  const img=offctx.createImageData(nx,ny), d=img.data, fr=frames[fi];
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const v=fr[i*ny+j]/127;        // field index (i=x, j=y)
+    const [r,g,b]=color(Math.max(-1,Math.min(1,v)));
+    const p=((ny-1-j)*nx+i)*4;     // flip y for canvas
+    d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=255;
+  }
+  offctx.putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(off,0,0,cv.width,cv.height);
+  // draw the cylinder
+  const sx=cv.width/nx, sy=cv.height/ny;
+  ctx.fillStyle="#11161f";ctx.strokeStyle="#46e0c0";ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(meta.cyl.x*sx,(ny-meta.cyl.y)*sy,meta.cyl.r*sx,0,7);ctx.fill();ctx.stroke();
+  fi=(fi+1)%frames.length;
+}
+
+function setCase(idx){
+  cur=idx; const Re=cases[idx]; decodeCase(Re);
+  document.getElementById("kRe").textContent=Re;
+  document.getElementById("kSt").textContent=meta.St.toFixed(3);
+  document.getElementById("kCd").textContent=meta.Cd.toFixed(2);
+  document.getElementById("kCl").textContent=meta.Cl_amp.toFixed(2);
+  document.getElementById("ReLab").textContent=Re;
+  const shed = Re>47;
+  document.getElementById("state").textContent = shed
+    ? `Shedding: alternating vortices → rhythmic side-force at ${(meta.St).toFixed(3)}·U/D.`
+    : `Below the shedding threshold (Re≈47): the wake is steady, no oscillation.`;
+  document.getElementById("cap").textContent =
+    `Vorticity field, Re=${Re}, domain blockage ${(meta.blockage*100).toFixed(0)}%. `
+    +`Red/blue = opposite spin. Baked from the Navier–Stokes solver.`;
+}
+
+if(D){
+  const sl=document.getElementById("ReSlide");
+  sl.max=cases.length-1; sl.value=Math.max(0,cases.indexOf(100)>=0?cases.indexOf(100):0);
+  sl.oninput=()=>setCase(+sl.value);
+  setCase(+sl.value);
+  setInterval(drawFrame, 70);
+} else {
+  document.getElementById("cap").textContent="Run solver/export_web.py to generate cylinder_data.js";
+}
+document.getElementById("tg").onclick=e=>{
+  if(e.target.dataset.m){
+    document.body.classList.toggle("math",e.target.dataset.m==="math");
+    [...document.querySelectorAll("#tg button")].forEach(b=>b.classList.toggle("on",b===e.target));
+  }
+};
+
+// ---- inverse panel: known U -> recovered U +/- CI -----------------------
+(function(){
+  const F = (typeof FLOWMETER_DATA!=="undefined") ? FLOWMETER_DATA : null;
+  const grid=document.getElementById("invGrid"), note=document.getElementById("invNote");
+  if(!F){ note.textContent="Run solver/verify_flowmeter.py to generate the round-trip."; return; }
+  const card=(t)=>{
+    const ok=Math.abs(t.err)<8;
+    return `<div style="background:#0c1426;border:1px solid #243a63;border-radius:10px;padding:11px 13px">
+      <div style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px">true wind ${t.U.toFixed(2)} m/s</div>
+      <div style="font-size:20px;font-weight:700;margin:3px 0">${t.Uhat.toFixed(2)}
+        <span style="font-size:12px;color:var(--mut)">m/s recovered</span></div>
+      <div style="font-size:11.5px;color:var(--mut)">95% CI [${t.lo.toFixed(2)}, ${t.hi.toFixed(2)}]</div>
+      <div style="font-size:12px;color:${ok?'var(--acc)':'#e9a23b'};font-weight:600">err ${t.err>=0?'+':''}${t.err.toFixed(1)}%</div>
+    </div>`;
+  };
+  grid.innerHTML = F.table.map(card).join("");
+  const maxerr=Math.max(...F.table.map(t=>Math.abs(t.err)));
+  note.innerHTML=`Recovered from the (noisy) wake signal via St(Re) calibrated on this solver `
+    +`&mdash; worst round-trip error ${maxerr.toFixed(1)}%. Williamson 1988 St(Re) law used as the physical reference; `
+    +`the blockage offset cancels in the round-trip.`;
+})();
+</script>
+</body>
+</html>
