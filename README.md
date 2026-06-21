@@ -1,6 +1,6 @@
 # Incompressible Flow Solver and Vortex Flow-Meter
 
-A two-dimensional incompressible Navier-Stokes solver written from first principles in NumPy, used
+A two-dimensional incompressible Navier-Stokes solver written in NumPy, used
 to model flow past a cylinder (the von Karman vortex street and vortex-induced vibration) and then
 inverted: from the wake signal it recovers the free-stream velocity, with a quantified uncertainty.
 The core uses NumPy.
@@ -33,7 +33,7 @@ recovers the velocity, with a 95 percent confidence interval from a sensor-noise
 | Flow-meter round trip: recover U | see `flowmeter_roundtrip.png` | known input U, with CI | ok |
 
 A finite domain confines the flow (blockage), raising St, Cd and Cl above the unbounded references.
-The offset is reported, not removed by tuning: the Strouhal number falls from 0.20 at 17 percent
+The Strouhal number falls from 0.20 at 17 percent
 blockage to 0.18 at 8 percent, approaching 0.16 as the walls recede. The inverse uses the `St(Re)`
 calibrated from the solver, so the blockage cancels in the round trip, in the same way that a real
 meter is calibrated per device.

@@ -63,9 +63,9 @@
   \parbox{\dimexpr\textwidth-2\fboxsep\relax}{%
   \vspace{3pt}\textbf{Aim.} Write a 2D incompressible Navier--Stokes solver from scratch, verify
   it against canonical benchmarks, and then invert it into a vortex flow-meter that reads the flow
-  speed from the wake frequency. The goal is a forward PDE solver trustworthy enough to be used
-  backwards as a measurement, with the finite-domain error reported rather than tuned away. The
-  core is numpy-only and every result ships with the reference it was checked against.\vspace{3pt}}}
+  speed from the wake frequency. The goal is a forward PDE solver used
+  backwards as a measurement, with the finite-domain error reported. The
+  core is numpy-only.\vspace{3pt}}}
 
 \vspace{1.0em}
 
@@ -92,8 +92,7 @@ produces that wake from first principles, and then running it backwards to read 
 shedding frequency, exercises the full computational pipeline: discretising the incompressible
 Navier--Stokes equations, enforcing the divergence-free constraint, representing a solid body on a
 regular grid, validating against canonical benchmarks, and turning a verified forward model into a
-measurement. The core is numpy-only and every result ships with the reference it was checked
-against.
+measurement. The core is numpy-only.
 
 % ---------------------------------------------------------------------------
 \section{Method (forward solver)}
@@ -145,16 +144,15 @@ The solver is checked against four classical results spanning the regimes it cla
   \end{tabular}
 \end{table}
 
-The lid-driven cavity is the decisive correctness test: the centreline velocity profiles match the
-Ghia et al.\ (1982) tabulated data to RMS of order $10^{-3}$ (Fig.~\ref{fig:bench}, left), which
-confirms the advection, diffusion, and projection are all right. The steady wake length and the VIV
+For the lid-driven cavity, the centreline velocity profiles match the
+Ghia et al.\ (1982) tabulated data to RMS of order $10^{-3}$ (Fig.~\ref{fig:bench}, left). The steady wake length and the VIV
 lock-in amplitude validate the immersed body and the fluid--structure coupling against the
 experimental literature.
 
-\paragraph{Blockage, reported not tuned.} A finite domain confines the flow, raising
+\paragraph{Blockage.} A finite domain confines the flow, raising
 $\mathrm{St}$, $C_d$, and $C_l$ above their unbounded references. This offset is quantified
 ($\mathrm{St}$: 0.20 at 17\,\% blockage, 0.18 at 8\,\%, toward 0.16 as the walls recede) rather than
-fitted away, which is the honest way to present a finite-domain solver.
+fitted away.
 
 \begin{figure}[h]
   \centering
@@ -166,7 +164,7 @@ fitted away, which is the honest way to present a finite-domain solver.
     \includegraphics[width=\linewidth]{cylinder_steady.png}
     \caption{Steady recirculation bubble; length vs Coutanceau--Bouard.}
   \end{subfigure}
-  \caption{Verification: the decisive cavity benchmark (left) and the steady wake (right).}
+  \caption{Verification: the cavity benchmark (left) and the steady wake (right).}
   \label{fig:bench}
 \end{figure}
 
@@ -204,8 +202,7 @@ reading $f$ from the (noise-added) lift signal and inverting the solver-calibrat
 $\mathrm{St}(\mathrm{Re})$ relation recovers $U$, with a 95\,\% confidence interval from a
 sensor-noise Monte-Carlo. Because the same $\mathrm{St}(\mathrm{Re})$ is used forwards and
 backwards, the finite-domain blockage cancels in the round trip, exactly the way a real meter is
-calibrated per device. This closes the forward-to-inverse loop: a from-scratch PDE solver,
-validated against benchmarks, then used as a measurement instrument with quantified uncertainty.
+calibrated per device.
 
 % ---------------------------------------------------------------------------
 \section{Limitations}
